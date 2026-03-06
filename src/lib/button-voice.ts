@@ -1,117 +1,226 @@
 const TARGET_LINE_COUNT = 300;
+const MAX_WORDS_PER_LINE = 15;
 
 const TAUNT_OPENERS = [
-  "Your clicking strategy has the urgency of a sleepy snail.",
-  "I have seen loading spinners with better reflexes.",
-  "Even dial-up internet expected more from you.",
-  "Your finger is currently in power-save mode.",
-  "Bold of you to call this pace 'trying.'",
-  "The button is getting stage fright from your silence.",
-  "I asked for action, not interpretive hesitation.",
-  "At this speed, moss will finish first.",
-  "The button has started writing a goodbye letter.",
-  "Your reaction time is sponsored by buffering.",
-  "That was almost a click, emotionally speaking.",
-  "The global count is waiting on your plot twist.",
-  "My pixels are aging while you think about it.",
-  "This is less 'fast tap' and more 'annual event.'",
-  "Your wrist is clearly negotiating with gravity.",
-  "Pressing is legal, you know.",
-  "That finger has a lot of opinions and zero follow-through.",
-  "You are one click away from competence.",
-  "The button believes in you more than I do.",
-  "Your hesitation has its own zip code.",
+  "Tap now, sleepy speedster",
+  "Move, reluctant legend",
+  "Click, dramatic statue",
+  "Press, puzzled sprinter",
+  "Hurry up, hesitant hero",
+  "Wake up, idle captain",
+  "Act fast, wandering thumb",
+  "Tap please, curious snail",
+  "Move now, cozy meteor",
+  "Click already, gentle tornado",
+  "Press now, delayed champion",
+  "Hustle, distracted pilot",
+  "Tap quick, wandering gremlin",
+  "Move please, waiting wizard",
+  "Click now, clockwatching ninja",
+  "Press soon, daydreaming racer",
+  "Hurry, lounging gladiator",
+  "Tap once, patient mammoth",
+  "Move it, mellow comet",
+  "Click quickly, stalling rocket",
 ];
 
 const TAUNT_MIDDLES = [
-  "Tap me before my confidence evaporates",
-  "Give that index finger a purpose",
-  "Break the stillness with one brave click",
-  "Prove you are not decorative background",
-  "Wake the counter from this dramatic pause",
-  "Deliver one respectable tap and we move on",
-  "Demonstrate pulse, preferably this decade",
-  "Show the global feed you are alive",
-  "Turn your suspense into button pressure",
-  "End this awkward staring contest",
+  "the counter needs chaos",
+  "this button craves impact",
+  "the stream wants motion",
+  "your silence feels loud",
+  "the moment begs drama",
+  "the tally misses you",
+  "my pixels feel ignored",
+  "this arena needs noise",
+  "the vibe wants thunder",
+  "your courage needs proof",
+  "the graph wants spikes",
+  "the audience wants action",
+  "your finger needs purpose",
+  "the page expects bravery",
+  "this click deserves witnesses",
 ];
 
-const TAUNT_CLOSERS = [
-  "and maybe I stop judging.",
-  "unless suspense is your favorite sport.",
+const TAUNT_TAG_ADJECTIVES = [
+  "buffering",
+  "wobbly",
+  "sleepy",
+  "sidequesting",
+  "vacationing",
+  "glitchy",
+  "slowmo",
+  "overthinking",
+  "drifting",
+  "echoing",
+  "latecomer",
+  "wandering",
+  "puzzled",
+  "fuzzy",
+  "rubberbanding",
+  "stubborn",
+  "loitering",
+  "napping",
+  "laggy",
+  "detouring",
+];
+
+const TAUNT_TAG_NOUNS = [
+  "llama",
+  "comet",
+  "goblin",
+  "otter",
+  "pirate",
+  "beacon",
+  "hamster",
+  "phoenix",
+  "jellyfish",
+  "pancake",
+  "tornado",
+  "fossil",
+  "drummer",
+  "badger",
+  "moonwalker",
 ];
 
 const RESPONSE_OPENERS = [
-  "Ouch, that one landed.",
-  "Hey, personal space.",
-  "Bold click. Mildly impressive.",
-  "Direct hit. I felt that in my CSS.",
-  "Good tap. Your finger finally clocked in.",
-  "You click like a caffeinated squirrel.",
-  "Nice swing. My gradient flinched.",
-  "That press had main-character energy.",
-  "Solid impact. Very dramatic.",
-  "Okay, that was unexpectedly efficient.",
-  "I heard that click in 4K.",
-  "Aggressive. I respect the chaos.",
-  "Clean tap. Zero notes.",
-  "You clicked like you meant it.",
-  "That was fast enough to scare analytics.",
-  "I retract one insult.",
-  "Excellent poke, tiny menace.",
-  "Your finger chose violence.",
-  "That tap had confidence.",
-  "Impressive. Briefly.",
+  "Ouch, bold striker",
+  "Nice hit, chaos artist",
+  "Sharp tap, tiny titan",
+  "Direct hit, click wizard",
+  "Solid press, speed fox",
+  "Great poke, tap hero",
+  "Clean strike, hype pilot",
+  "Brave click, neon ninja",
+  "Loud tap, pixel boxer",
+  "Wild hit, turbo poet",
+  "Big swing, spark captain",
+  "Fast jab, rhythm goblin",
+  "Hard press, stunt penguin",
+  "Heavy tap, rocket bard",
+  "Quick poke, joy pirate",
+  "Hot click, vibe ranger",
+  "Mean jab, caffeinated knight",
+  "Sweet hit, storm dancer",
+  "Prime press, cosmic chef",
+  "Epic tap, glitch samurai",
 ];
 
 const RESPONSE_MIDDLES = [
-  "Try again if you think that was your best",
-  "Give me another one and make it louder",
-  "Do not stop now, momentum looks good on you",
-  "I can take another, probably",
-  "Hit me again before your courage expires",
-  "Follow that up before the vibe cools down",
-  "Run it back and keep the streak alive",
-  "You are dangerously close to being consistent",
-  "Queue the next tap while you are warmed up",
-  "Do it again and call it a training montage",
+  "run another before cooldown",
+  "keep the streak alive",
+  "that felt expensive",
+  "my gradients are rattled",
+  "you woke the dashboard",
+  "the counter applauds loudly",
+  "your timing looks dangerous",
+  "that shook my border",
+  "you hit with confidence",
+  "this page felt that",
+  "your finger means business",
+  "analytics just blinked",
+  "the graph jumped instantly",
+  "my pixels need ice",
+  "the stream got louder",
 ];
 
-const RESPONSE_CLOSERS = [
-  "champ.",
-  "speedster.",
+const RESPONSE_TAG_ADJECTIVES = [
+  "victorious",
+  "reckless",
+  "sparked",
+  "rowdy",
+  "charged",
+  "fearless",
+  "amped",
+  "nuclear",
+  "zippy",
+  "feral",
+  "flashy",
+  "electric",
+  "witty",
+  "spicy",
+  "stormy",
+  "chaotic",
+  "jubilant",
+  "kinetic",
+  "lucky",
+  "legendary",
 ];
 
-function buildLines(openers: string[], middles: string[], closers: string[]): string[] {
-  const lines: string[] = [];
+const RESPONSE_TAG_NOUNS = [
+  "panther",
+  "otter",
+  "captain",
+  "meteor",
+  "badger",
+  "wizard",
+  "cyclone",
+  "falcon",
+  "pirate",
+  "mongoose",
+  "engine",
+  "samurai",
+  "beacon",
+  "hammer",
+  "juggler",
+];
 
-  for (const opener of openers) {
-    for (const middle of middles) {
-      for (const closer of closers) {
-        lines.push(`${opener} ${middle} ${closer}`);
+function countWords(line: string): number {
+  return line.trim().split(/\s+/).filter(Boolean).length;
+}
 
-        if (lines.length === TARGET_LINE_COUNT) {
-          return lines;
-        }
-      }
+function buildUniqueTags(adjectives: string[], nouns: string[]): string[] {
+  const tags: string[] = [];
+  for (const adjective of adjectives) {
+    for (const noun of nouns) {
+      tags.push(`${adjective} ${noun}`);
     }
   }
 
-  throw new Error(
-    `Insufficient phrase permutations: expected ${TARGET_LINE_COUNT}, got ${lines.length}.`,
-  );
+  if (tags.length !== TARGET_LINE_COUNT) {
+    throw new Error(
+      `Tag count mismatch: expected ${TARGET_LINE_COUNT}, got ${tags.length}.`,
+    );
+  }
+
+  return tags;
+}
+
+function buildLinePool(
+  openers: string[],
+  middles: string[],
+  adjectives: string[],
+  nouns: string[],
+): string[] {
+  const tags = buildUniqueTags(adjectives, nouns);
+
+  return tags.map((tag, index) => {
+    const opener = openers[index % openers.length];
+    const middle = middles[Math.floor(index / openers.length) % middles.length];
+    const line = `${opener} ${middle}, ${tag}.`;
+
+    if (countWords(line) > MAX_WORDS_PER_LINE) {
+      throw new Error(
+        `Line exceeds ${MAX_WORDS_PER_LINE} words: "${line}" (${countWords(line)} words).`,
+      );
+    }
+
+    return line;
+  });
 }
 
 /** 300 rotating taunts to provoke interaction. */
-export const TAUNT_LINES = buildLines(
+export const TAUNT_LINES = buildLinePool(
   TAUNT_OPENERS,
   TAUNT_MIDDLES,
-  TAUNT_CLOSERS,
+  TAUNT_TAG_ADJECTIVES,
+  TAUNT_TAG_NOUNS,
 );
 
 /** 300 rotating responses shown immediately after a press. */
-export const PRESS_RESPONSE_LINES = buildLines(
+export const PRESS_RESPONSE_LINES = buildLinePool(
   RESPONSE_OPENERS,
   RESPONSE_MIDDLES,
-  RESPONSE_CLOSERS,
+  RESPONSE_TAG_ADJECTIVES,
+  RESPONSE_TAG_NOUNS,
 );

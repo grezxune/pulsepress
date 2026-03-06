@@ -28,3 +28,5 @@
 - Added timing behavior: taunts rotate every few seconds, pause immediately after click, and resume after 5 seconds of idle time.
 - Updated bubble timing to a unified 6-second display window for taunts and click responses.
 - Added a 2-second silent gap between bubble messages and reserved fixed bubble space to prevent layout shift.
+- Rebuilt taunt/response phrase pools to remove repeated punchline endings and enforce uniqueness.
+- Enforced a hard 15-word maximum for every taunt and every click response.
