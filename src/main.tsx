@@ -21,7 +21,9 @@ if (!convexUrl) {
       <main className="press-root">
         <section className="press-shell">
           <div className="press-mark-frame">
-            <img src="/logo.png" alt="PulseForge logo" className="press-mark" />
+            <div className="press-mark-rotor">
+              <img src="/logo.png" alt="PulseForge logo" className="press-mark" />
+            </div>
           </div>
           <p className="press-label">PulseForge</p>
           <p className="press-error">Missing VITE_CONVEX_URL in environment.</p>

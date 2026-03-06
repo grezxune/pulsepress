@@ -32,3 +32,4 @@
 - Enforced a hard 15-word maximum for every taunt and every click response.
 - Added local per-client level progression with taunting level titles and escalating button difficulty.
 - Added progressive mechanics by level: horizontal slide, random teleporting, camouflage styling, and shrinking click windows.
+- Added continuous logo rotation (360 degrees every 3 seconds, infinite loop).

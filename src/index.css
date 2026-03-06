@@ -84,6 +84,23 @@ body::before {
   filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.16));
 }
 
+.press-mark-rotor {
+  display: grid;
+  place-items: center;
+  animation: press-logo-spin 3s linear infinite;
+  will-change: transform;
+}
+
+@keyframes press-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .press-mark-frame {
   position: relative;
   width: clamp(88px, 15vw, 116px);
@@ -343,4 +360,10 @@ body::before {
 .press-button.is-camouflage.is-open {
   color: color-mix(in srgb, var(--text-main), var(--card-bg) 18%);
   border-color: color-mix(in srgb, var(--signal), var(--soft-border) 50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .press-mark-rotor {
+    animation: none;
+  }
 }
