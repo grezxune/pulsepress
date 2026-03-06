@@ -19,3 +19,4 @@
 - Added a premium emblem treatment behind the logo for contrast on both light and dark themes.
 - Updated the PulseForge title typography to match the primary page font.
 - Reprocessed the provided logo file to remove baked checkerboard/white rectangle artifacts and regenerated all web icon assets.
+- Removed white highlights from the circular logo badge gradient for a darker premium finish.
