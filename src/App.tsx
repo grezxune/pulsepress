@@ -2,7 +2,7 @@ import { gsap } from "gsap";
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
-import { formatCount } from "./lib/count-format";
+import { RollingCounter } from "./components/rolling-counter";
 import { PRESS_RESPONSE_LINES, TAUNT_LINES } from "./lib/button-voice";
 
 const MESSAGE_VISIBLE_MS = 6_000;
@@ -384,7 +384,7 @@ function App() {
         <p className="press-level">
           {`Level ${levelNumber} - ${levelProfile.title}`}
         </p>
-        <p className="press-count">{counter ? formatCount(displayCount) : "..."}</p>
+        {counter ? <RollingCounter value={displayCount} /> : <p className="press-count">...</p>}
         <div className="press-bubble-slot" aria-hidden="true">
           <p className={`press-bubble${bubbleLine ? " is-visible" : ""}`}>
             {bubbleLine ?? ""}

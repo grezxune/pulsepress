@@ -33,3 +33,4 @@
 - Added local per-client level progression with taunting level titles and escalating button difficulty.
 - Added progressive mechanics by level: horizontal slide, random teleporting, camouflage styling, and shrinking click windows.
 - Added continuous logo rotation (360 degrees every 3 seconds, infinite loop).
+- Reworked the global count display into an old-school rolling digit reel animation.

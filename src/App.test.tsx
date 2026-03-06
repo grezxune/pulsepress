@@ -38,7 +38,7 @@ describe("App", () => {
 
     render(<App />);
 
-    expect(screen.getByText("9,876")).toBeInTheDocument();
+    expect(screen.getByLabelText("9,876")).toBeInTheDocument();
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "Press" })).toBeEnabled();
     });

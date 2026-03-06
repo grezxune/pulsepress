@@ -151,9 +151,51 @@ body::before {
 
 .press-count {
   margin: 0;
+  display: inline-flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.02em;
   font-size: clamp(2.2rem, 8vw, 3.8rem);
   font-weight: 600;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.press-count-digit,
+.press-count-separator,
+.press-count-slot {
+  display: inline-block;
+  text-align: center;
+}
+
+.press-count-digit,
+.press-count-slot {
+  width: 0.63ch;
+}
+
+.press-count-separator {
+  width: 0.34ch;
+  opacity: 0.8;
+}
+
+.press-count-slot {
+  position: relative;
+  height: 1.02em;
+  overflow: hidden;
+}
+
+.press-count-reel {
+  display: flex;
+  flex-direction: column;
+  transform: translateY(calc(var(--digit-index) * -1.02em));
+  transition: transform 540ms cubic-bezier(0.24, 0.8, 0.28, 1);
+  will-change: transform;
+}
+
+.press-count-step {
+  display: block;
+  height: 1.02em;
+  line-height: 1.02em;
 }
 
 .press-bubble-slot {
@@ -365,5 +407,9 @@ body::before {
 @media (prefers-reduced-motion: reduce) {
   .press-mark-rotor {
     animation: none;
+  }
+
+  .press-count-reel {
+    transition: none;
   }
 }
