@@ -15,3 +15,6 @@
 - Removed remaining bot-rate-limit schema and code paths (`botClients`) and reverted to direct global increment flow.
 - Replaced app logo and favicon with optimized PNG assets from the new PulseForge mark.
 - Added `apple-touch-icon.png` and removed legacy SVG icon files.
+- Converted the new PulseForge mark to true transparency and removed the visible white tile effect.
+- Added a premium emblem treatment behind the logo for contrast on both light and dark themes.
+- Updated the PulseForge title typography to match the primary page font.

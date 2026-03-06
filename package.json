@@ -14,7 +14,6 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@fontsource/dm-serif-display": "^5.2.8",
     "@fontsource/space-grotesk": "^5.2.10",
     "@vercel/analytics": "^1.6.1",
     "convex": "^1.32.0",

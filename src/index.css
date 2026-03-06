@@ -1,6 +1,5 @@
 @import "@fontsource/space-grotesk/400.css";
 @import "@fontsource/space-grotesk/600.css";
-@import "@fontsource/dm-serif-display/400.css";
 
 :root {
   --paper: #e8e4dd;
@@ -80,15 +79,48 @@ body::before {
 }
 
 .press-mark {
-  width: clamp(58px, 10vw, 72px);
+  width: clamp(66px, 11vw, 84px);
   height: auto;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.16));
+}
+
+.press-mark-frame {
+  position: relative;
+  width: clamp(88px, 15vw, 116px);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+  border: 1px solid color-mix(in srgb, var(--soft-border), transparent 15%);
+  background:
+    radial-gradient(
+      circle at 30% 24%,
+      color-mix(in srgb, var(--offwhite), transparent 5%) 0%,
+      color-mix(in srgb, var(--card-bg), transparent 32%) 48%,
+      color-mix(in srgb, var(--ink), transparent 95%) 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 14px 36px -24px var(--shadow-color);
+}
+
+.press-mark-frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(circle at 70% 75%, rgba(230, 59, 46, 0.18), transparent 58%);
+  z-index: -1;
 }
 
 .press-label {
   margin: 0;
-  font-family: "DM Serif Display", serif;
+  font-family: inherit;
+  font-weight: 600;
   font-size: clamp(1.05rem, 2.2vw, 1.35rem);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
 }
 
 .press-count {
