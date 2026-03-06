@@ -165,9 +165,11 @@ describe("App", () => {
       expect(increment).toHaveBeenCalledWith({});
     });
 
+    const hud = screen.getByLabelText("Run HUD");
     expect(screen.getByText("Round 2")).toBeInTheDocument();
     expect(screen.getByText("If this misses, stretch first")).toBeInTheDocument();
-    expect(screen.getByText("10.0s")).toBeInTheDocument();
+    expect(within(hud).getByText("10.0s")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "10.0s" })).toBeInTheDocument();
   });
 
   it("resets to round 1 and stops the clock when the round timer expires", async () => {

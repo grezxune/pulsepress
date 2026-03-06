@@ -57,3 +57,4 @@
 - Added high-level engine tests (up to level 5000) to enforce visibility-window and interaction fairness constraints.
 - Updated SEO/metadata and structured data copy to market PulsePress as a one-button world-record game across search and social previews.
 - Regenerated `public/og-image.png` to replace the legacy brand title text with `PulsePress` in social/SEO sharing previews.
+- Updated the primary button label to display the live round countdown after the first press instead of static `Press`.

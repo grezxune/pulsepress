@@ -485,6 +485,7 @@ function App() {
     levelProfile.camouflage && "is-camouflage",
     isClickWindowOpen ? "is-open" : "is-closed",
   );
+  const pressButtonLabel = isRoundTimerRunning ? `${(roundTimeRemainingMs / 1000).toFixed(1)}s` : "Press";
 
   const renderPressButton = (anchorStyle: CSSProperties & Record<string, string>) => (
     <div className={buttonAnchorClassName} style={anchorStyle}>
@@ -496,7 +497,7 @@ function App() {
         onClick={handlePress}
         disabled={!counter || !isClickWindowOpen || isWinnerModalOpen}
       >
-        Press
+        {pressButtonLabel}
       </button>
     </div>
   );
