@@ -1,13 +1,27 @@
 import { gsap } from "gsap";
-import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
+import { Modal } from "./components/modal";
 import { RollingCounter } from "./components/rolling-counter";
+import { TileHeader } from "./components/tile-header";
 import { PRESS_RESPONSE_LINES, TAUNT_LINES } from "./lib/button-voice";
 
 const MESSAGE_VISIBLE_MS = 6_000;
 const MESSAGE_GAP_MS = 2_000;
-const CLICKS_PER_LEVEL = 6;
+const ROUND_TIME_LIMIT_MS = 10_000;
+const ROUND_TICK_MS = 100;
+
+const CENTER_BUTTON_POSITION = { x: 50, y: 50 };
 
 type LevelProfile = {
   title: string;
@@ -138,7 +152,7 @@ function joinClasses(...tokens: Array<string | false>): string {
   return tokens.filter(Boolean).join(" ");
 }
 
-/** Main single-screen interaction for the PulseForge counter experiment. */
+/** Main single-screen interaction for the PulsePress counter experiment. */
 function App() {
   const stageRef = useRef<HTMLElement>(null);
   const tauntStartTimeoutRef = useRef<number | null>(null);
@@ -149,25 +163,42 @@ function App() {
   const teleportIntervalRef = useRef<number | null>(null);
   const windowCycleIntervalRef = useRef<number | null>(null);
   const windowCloseTimeoutRef = useRef<number | null>(null);
+  const roundIntervalRef = useRef<number | null>(null);
+  const roundDeadlineRef = useRef<number | null>(null);
+  const levelRef = useRef(1);
+  const highestRoundLevelRef = useRef(1);
   const tauntDeckRef = useRef<number[]>([]);
   const responseDeckRef = useRef<number[]>([]);
+
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingPresses, setPendingPresses] = useState(0);
-  const [localPresses, setLocalPresses] = useState(0);
   const [bubbleLine, setBubbleLine] = useState<string | null>(null);
-  const [buttonPosition, setButtonPosition] = useState({ x: 50, y: 50 });
+  const [buttonPosition, setButtonPosition] = useState(CENTER_BUTTON_POSITION);
   const [isWindowOpen, setIsWindowOpen] = useState(true);
+  const [levelNumber, setLevelNumber] = useState(1);
+  const [roundBestLevel, setRoundBestLevel] = useState(1);
+  const [roundTimeRemainingMs, setRoundTimeRemainingMs] = useState(ROUND_TIME_LIMIT_MS);
+  const [isRoundTimerRunning, setIsRoundTimerRunning] = useState(false);
+  const [winnerName, setWinnerName] = useState("");
+  const [winnerErrorMessage, setWinnerErrorMessage] = useState<string | null>(null);
+  const [winnerLevelToClaim, setWinnerLevelToClaim] = useState<number | null>(null);
+  const [winnerClaimId, setWinnerClaimId] = useState<Id<"winnerClaims"> | null>(null);
+  const [isWinnerModalOpen, setIsWinnerModalOpen] = useState(false);
+  const [isSavingWinner, setIsSavingWinner] = useState(false);
 
   const counter = useQuery(api.counter.getTotal);
   const highestLevelRecord = useQuery(api.counter.getHighestLevel);
+  const winners = useQuery(api.counter.getLevelWinners);
   const increment = useMutation(api.counter.increment);
   const reportHighestLevel = useMutation(api.counter.reportHighestLevel);
-  const levelNumber = Math.min(
-    LEVEL_PROFILES.length,
-    Math.floor(localPresses / CLICKS_PER_LEVEL) + 1,
-  );
-  const levelProfile = LEVEL_PROFILES[levelNumber - 1] ?? LEVEL_PROFILES[0];
+  const addLevelWinner = useMutation(api.counter.addLevelWinner);
+
+  const profileIndex = Math.min(levelNumber - 1, LEVEL_PROFILES.length - 1);
+  const levelProfile = LEVEL_PROFILES[profileIndex] ?? LEVEL_PROFILES[0];
+  const isClickWindowOpen = levelProfile.windowOpenMs >= levelProfile.windowCycleMs || isWindowOpen;
   const highestRecordedLevel = highestLevelRecord?.highestLevel ?? 1;
+  const latestWinner = winners?.[0] ?? null;
+  const clickCount = Math.max(0, levelNumber - 1);
 
   const displayCount = useMemo(
     () => (counter?.total ?? 0) + pendingPresses,
@@ -248,6 +279,23 @@ function App() {
     }
   }, []);
 
+  const stopRoundTimer = useCallback(() => {
+    if (roundIntervalRef.current !== null) {
+      window.clearInterval(roundIntervalRef.current);
+      roundIntervalRef.current = null;
+    }
+
+    roundDeadlineRef.current = null;
+    setIsRoundTimerRunning(false);
+    setRoundTimeRemainingMs(ROUND_TIME_LIMIT_MS);
+  }, []);
+
+  const startOrResetRoundTimer = useCallback(() => {
+    roundDeadlineRef.current = Date.now() + ROUND_TIME_LIMIT_MS;
+    setIsRoundTimerRunning(true);
+    setRoundTimeRemainingMs(ROUND_TIME_LIMIT_MS);
+  }, []);
+
   const randomButtonPosition = useCallback(() => {
     const x = 18 + Math.random() * 64;
     const y = 26 + Math.random() * 48;
@@ -275,25 +323,113 @@ function App() {
     [clearVoiceTimers, showTaunt],
   );
 
+  const resetRun = useCallback(() => {
+    levelRef.current = 1;
+    setLevelNumber(1);
+    setRoundBestLevel(1);
+    highestRoundLevelRef.current = 1;
+    setIsWindowOpen(true);
+    setButtonPosition(CENTER_BUTTON_POSITION);
+  }, []);
+
+  const finishRound = useCallback(() => {
+    const achievedLevel = highestRoundLevelRef.current;
+    stopRoundTimer();
+    resetRun();
+
+    if (achievedLevel <= 1) {
+      return;
+    }
+
+    void reportHighestLevel({ level: achievedLevel })
+      .then((result) => {
+        if (!result.updated || result.claimId === null) {
+          return;
+        }
+
+        setWinnerLevelToClaim(result.highestLevel);
+        setWinnerClaimId(result.claimId);
+        setWinnerName("");
+        setWinnerErrorMessage(null);
+        setIsWinnerModalOpen(true);
+      })
+      .catch((error) => {
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "Could not verify world record. Try again.",
+        );
+      });
+  }, [reportHighestLevel, resetRun, stopRoundTimer]);
+
+  const closeWinnerModal = useCallback(() => {
+    setIsWinnerModalOpen(false);
+    setWinnerName("");
+    setWinnerErrorMessage(null);
+    setWinnerLevelToClaim(null);
+    setWinnerClaimId(null);
+  }, []);
+
+  const handleWinnerSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const claimId = winnerClaimId;
+    if (claimId === null) {
+      return;
+    }
+
+    setWinnerErrorMessage(null);
+    setIsSavingWinner(true);
+
+    void addLevelWinner({
+      claimId,
+      name: winnerName,
+    })
+      .then(() => {
+        closeWinnerModal();
+      })
+      .catch((error) => {
+        setWinnerErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "Could not save winner name. Try again.",
+        );
+      })
+      .finally(() => {
+        setIsSavingWinner(false);
+      });
+  };
+
   useEffect(() => {
     const stage = stageRef.current;
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    if (!stage || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (!stage) {
       return;
     }
 
     const ctx = gsap.context(() => {
-      gsap.fromTo(
-        ".press-shell",
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" },
-      );
+      if (!prefersReducedMotion) {
+        gsap.fromTo(
+          ".press-shell",
+          { opacity: 0, y: 20 },
+          { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" },
+        );
 
-      gsap.fromTo(
-        ".press-mark",
-        { scale: 0.92, opacity: 0 },
-        { scale: 1, opacity: 1, duration: 0.7, delay: 0.1, ease: "power2.out" },
-      );
+        gsap.fromTo(
+          ".press-mark",
+          { scale: 0.92, opacity: 0 },
+          { scale: 1, opacity: 1, duration: 0.7, delay: 0.1, ease: "power2.out" },
+        );
+      }
+
+      gsap.to(".press-mark-rotor", {
+        rotation: 360,
+        duration: prefersReducedMotion ? 12 : 3,
+        ease: "none",
+        repeat: -1,
+        transformOrigin: "50% 50%",
+      });
     }, stage);
 
     return () => ctx.revert();
@@ -303,10 +439,6 @@ function App() {
     startTauntLoop(MESSAGE_GAP_MS);
     return () => clearVoiceTimers();
   }, [clearVoiceTimers, startTauntLoop]);
-
-  useEffect(() => {
-    void reportHighestLevel({ level: levelNumber }).catch(() => undefined);
-  }, [levelNumber, reportHighestLevel]);
 
   useEffect(() => {
     clearDifficultyTimers();
@@ -341,14 +473,61 @@ function App() {
     return () => clearDifficultyTimers();
   }, [clearDifficultyTimers, levelProfile, randomButtonPosition]);
 
-  const handlePress = () => {
-    if (!counter || !isWindowOpen) {
+  useEffect(() => {
+    if (!isRoundTimerRunning) {
       return;
     }
 
-    clearVoiceTimers();
-    setLocalPresses((count) => count + 1);
+    const updateClock = () => {
+      const deadline = roundDeadlineRef.current;
+      if (deadline === null) {
+        return;
+      }
 
+      const remainingMs = Math.max(0, deadline - Date.now());
+      setRoundTimeRemainingMs(remainingMs);
+
+      if (remainingMs === 0) {
+        finishRound();
+      }
+    };
+
+    updateClock();
+    roundIntervalRef.current = window.setInterval(updateClock, ROUND_TICK_MS);
+
+    return () => {
+      if (roundIntervalRef.current !== null) {
+        window.clearInterval(roundIntervalRef.current);
+        roundIntervalRef.current = null;
+      }
+    };
+  }, [finishRound, isRoundTimerRunning]);
+
+  useEffect(
+    () => () => {
+      clearVoiceTimers();
+      clearDifficultyTimers();
+      stopRoundTimer();
+    },
+    [clearDifficultyTimers, clearVoiceTimers, stopRoundTimer],
+  );
+
+  const handlePress = () => {
+    if (!counter || !isClickWindowOpen || isWinnerModalOpen) {
+      return;
+    }
+
+    const nextLevel = levelRef.current + 1;
+    levelRef.current = nextLevel;
+    setLevelNumber(nextLevel);
+    setRoundBestLevel((currentBest) => {
+      const best = Math.max(currentBest, nextLevel);
+      highestRoundLevelRef.current = best;
+      return best;
+    });
+    startOrResetRoundTimer();
+
+    clearVoiceTimers();
     setBubbleLine(getNextResponse());
     bubbleHideTimeoutRef.current = window.setTimeout(() => {
       setBubbleLine(null);
@@ -371,7 +550,7 @@ function App() {
       });
   };
 
-  const position = levelProfile.teleport ? buttonPosition : { x: 50, y: 50 };
+  const position = levelProfile.teleport ? buttonPosition : CENTER_BUTTON_POSITION;
   const buttonStyle: CSSProperties & Record<string, string> = {
     left: `${position.x}%`,
     top: `${position.y}%`,
@@ -382,23 +561,32 @@ function App() {
   return (
     <main ref={stageRef} className="press-root">
       <section className="press-shell" aria-live="polite">
+        <TileHeader
+          isRoundTimerRunning={isRoundTimerRunning}
+          roundTimeRemainingMs={roundTimeRemainingMs}
+          roundNumber={levelNumber}
+          roundTitle={levelProfile.title}
+          runClicks={clickCount}
+          runBest={roundBestLevel}
+          worldRecord={highestRecordedLevel}
+          latestWinner={
+            latestWinner
+              ? {
+                  name: latestWinner.name,
+                  level: latestWinner.level,
+                }
+              : null
+          }
+        />
         <div className="press-mark-frame">
           <div className="press-mark-rotor">
-            <img src="/logo.png" alt="PulseForge logo" className="press-mark" />
+            <img src="/logo.png" alt="PulsePress logo" className="press-mark" />
           </div>
         </div>
-        <p className="press-label">PulseForge</p>
-        <p className="press-level">
-          {`Level ${levelNumber} - ${levelProfile.title}`}
-        </p>
-        <p className="press-stats">
-          {`Your Clicks: ${localPresses.toLocaleString("en-US")} · Record Level: ${highestRecordedLevel}`}
-        </p>
+        <p className="press-label">Global Press Count</p>
         {counter ? <RollingCounter value={displayCount} /> : <p className="press-count">...</p>}
         <div className="press-bubble-slot" aria-hidden="true">
-          <p className={`press-bubble${bubbleLine ? " is-visible" : ""}`}>
-            {bubbleLine ?? ""}
-          </p>
+          <p className={`press-bubble${bubbleLine ? " is-visible" : ""}`}>{bubbleLine ?? ""}</p>
         </div>
 
         <div className="press-action-zone">
@@ -407,12 +595,12 @@ function App() {
               "press-button",
               levelProfile.slide && "is-sliding",
               levelProfile.camouflage && "is-camouflage",
-              isWindowOpen ? "is-open" : "is-closed",
+              isClickWindowOpen ? "is-open" : "is-closed",
             )}
             style={buttonStyle}
             type="button"
             onClick={handlePress}
-            disabled={!counter || !isWindowOpen}
+            disabled={!counter || !isClickWindowOpen || isWinnerModalOpen}
           >
             Press
           </button>
@@ -420,15 +608,14 @@ function App() {
 
         <p className="press-meta">Global press stream is live.</p>
         <p className="press-description">
-          This experiment is a single global count of how many times the button
-          has been pressed.
+          One click equals one level. Beat the world record and enter your name when the round timer expires.
         </p>
         <a
           className="press-github"
-          href="https://github.com/grezxune/pulseforge"
+          href="https://github.com/grezxune/pulsepress"
           target="_blank"
           rel="noopener noreferrer"
-          aria-label="View PulseForge on GitHub"
+          aria-label="View PulsePress on GitHub"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true" className="press-github-icon">
             <path
@@ -440,6 +627,37 @@ function App() {
         </a>
         {errorMessage ? <p className="press-error">{errorMessage}</p> : null}
       </section>
+
+      <Modal
+        title="World Record Beaten"
+        description={
+          winnerLevelToClaim
+            ? `You set the new world record at Level ${winnerLevelToClaim}. Add your name to the winner list.`
+            : "You set a new world record. Add your name to the winner list."
+        }
+        open={isWinnerModalOpen}
+        onClose={closeWinnerModal}
+      >
+        <form className="winner-form" onSubmit={handleWinnerSubmit}>
+          <label className="winner-label" htmlFor="winner-name">
+            Winner name
+          </label>
+          <input
+            id="winner-name"
+            className="winner-input"
+            type="text"
+            value={winnerName}
+            maxLength={40}
+            autoComplete="nickname"
+            onChange={(event) => setWinnerName(event.target.value)}
+            disabled={isSavingWinner}
+          />
+          {winnerErrorMessage ? <p className="winner-error">{winnerErrorMessage}</p> : null}
+          <button type="submit" className="winner-submit" disabled={isSavingWinner}>
+            {isSavingWinner ? "Saving..." : "Save winner"}
+          </button>
+        </form>
+      </Modal>
     </main>
   );
 }

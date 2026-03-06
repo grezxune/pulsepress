@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://pulseforge.tommytreb.com/sitemap.xml
+Sitemap: https://pulsepress.tommytreb.com/sitemap.xml

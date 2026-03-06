@@ -4,6 +4,12 @@ import { mutation, query } from "./_generated/server";
 const SHARD_COUNT = 128;
 const LEVEL_RECORD_SCOPE = "global";
 const MIN_LEVEL = 1;
+const MAX_WINNER_NAME_LENGTH = 40;
+const WINNER_FEED_LIMIT = 8;
+
+function normalizeWinnerName(input: string): string {
+  return input.trim().replace(/\s+/g, " ").slice(0, MAX_WINNER_NAME_LENGTH);
+}
 
 /** Returns the globally aggregated press count. */
 export const getTotal = query({
@@ -45,6 +51,26 @@ export const getHighestLevel = query({
   },
 });
 
+/** Returns the latest winner submissions for world-record runs. */
+export const getLevelWinners = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id("levelWinners"),
+      _creationTime: v.number(),
+      name: v.string(),
+      level: v.number(),
+      createdAt: v.number(),
+    }),
+  ),
+  handler: async (ctx) =>
+    ctx.db
+      .query("levelWinners")
+      .withIndex("by_createdAt")
+      .order("desc")
+      .take(WINNER_FEED_LIMIT),
+});
+
 /** Updates the global highest level record if a higher level is reached. */
 export const reportHighestLevel = mutation({
   args: {
@@ -53,6 +79,7 @@ export const reportHighestLevel = mutation({
   returns: v.object({
     highestLevel: v.number(),
     updated: v.boolean(),
+    claimId: v.union(v.id("winnerClaims"), v.null()),
   }),
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -68,10 +95,17 @@ export const reportHighestLevel = mutation({
         highestLevel: normalizedLevel,
         updatedAt: now,
       });
+      const claimId = await ctx.db.insert("winnerClaims", {
+        level: normalizedLevel,
+        createdAt: now,
+        claimed: false,
+        claimedAt: null,
+      });
 
       return {
         highestLevel: normalizedLevel,
         updated: true,
+        claimId,
       };
     }
 
@@ -80,17 +114,64 @@ export const reportHighestLevel = mutation({
         highestLevel: normalizedLevel,
         updatedAt: now,
       });
+      const claimId = await ctx.db.insert("winnerClaims", {
+        level: normalizedLevel,
+        createdAt: now,
+        claimed: false,
+        claimedAt: null,
+      });
 
       return {
         highestLevel: normalizedLevel,
         updated: true,
+        claimId,
       };
     }
 
     return {
       highestLevel: existingRecord.highestLevel,
       updated: false,
+      claimId: null,
     };
+  },
+});
+
+/** Stores the winner name for a world-record run result. */
+export const addLevelWinner = mutation({
+  args: {
+    claimId: v.id("winnerClaims"),
+    name: v.string(),
+  },
+  returns: v.object({
+    saved: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    const winnerName = normalizeWinnerName(args.name);
+    if (!winnerName) {
+      throw new Error("Winner name is required.");
+    }
+
+    const claim = await ctx.db.get(args.claimId);
+    if (!claim) {
+      throw new Error("Winner claim was not found.");
+    }
+
+    if (claim.claimed) {
+      throw new Error("Winner claim has already been completed.");
+    }
+
+    const now = Date.now();
+    await ctx.db.insert("levelWinners", {
+      name: winnerName,
+      level: claim.level,
+      createdAt: now,
+    });
+    await ctx.db.patch(args.claimId, {
+      claimed: true,
+      claimedAt: now,
+    });
+
+    return { saved: true };
   },
 });
 

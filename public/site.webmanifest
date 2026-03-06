@@ -1,6 +1,6 @@
 {
-  "name": "PulseForge",
-  "short_name": "PulseForge",
+  "name": "PulsePress",
+  "short_name": "PulsePress",
   "description": "A one-button real-time global press counter experiment.",
   "start_url": "/",
   "scope": "/",

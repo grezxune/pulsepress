@@ -13,6 +13,22 @@
   --text-muted: rgba(17, 17, 17, 0.72);
   --button-text: #f5f3ee;
   --shadow-color: rgba(17, 17, 17, 0.2);
+  --modal-overlay: rgba(8, 8, 8, 0.52);
+  --hud-bg: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--offwhite), transparent 4%),
+      color-mix(in srgb, var(--paper), transparent 16%)
+    ),
+    repeating-linear-gradient(
+      -27deg,
+      rgba(17, 17, 17, 0.03) 0,
+      rgba(17, 17, 17, 0.03) 2px,
+      transparent 2px,
+      transparent 8px
+    );
+  --hud-border: color-mix(in srgb, var(--ink), transparent 78%);
+  --hud-chip-bg: color-mix(in srgb, var(--offwhite), transparent 16%);
+  --hud-chip-border: color-mix(in srgb, var(--ink), transparent 84%);
   color-scheme: light dark;
 }
 
@@ -24,6 +40,22 @@
     --text-muted: rgba(245, 243, 238, 0.72);
     --soft-border: rgba(245, 243, 238, 0.18);
     --shadow-color: rgba(0, 0, 0, 0.4);
+    --modal-overlay: rgba(0, 0, 0, 0.72);
+    --hud-bg: linear-gradient(
+        135deg,
+        color-mix(in srgb, #212121, transparent 12%),
+        color-mix(in srgb, #171717, transparent 0%)
+      ),
+      repeating-linear-gradient(
+        -27deg,
+        rgba(245, 243, 238, 0.03) 0,
+        rgba(245, 243, 238, 0.03) 2px,
+        transparent 2px,
+        transparent 9px
+      );
+    --hud-border: color-mix(in srgb, var(--offwhite), transparent 82%);
+    --hud-chip-bg: color-mix(in srgb, #1f1f1f, transparent 8%);
+    --hud-chip-border: color-mix(in srgb, var(--offwhite), transparent 86%);
   }
 }
 
@@ -73,7 +105,7 @@ body::before {
   box-shadow: 0 25px 60px -40px var(--shadow-color);
   display: grid;
   justify-items: center;
-  row-gap: 0.65rem;
+  row-gap: 0.8rem;
   text-align: center;
   padding: clamp(1.5rem, 4vw, 2.5rem);
 }
@@ -87,8 +119,11 @@ body::before {
 .press-mark-rotor {
   display: grid;
   place-items: center;
-  animation: press-logo-spin 3s linear infinite;
   will-change: transform;
+}
+
+.press-mark-rotor.is-spinning {
+  animation: press-logo-spin 3s linear infinite;
 }
 
 @keyframes press-logo-spin {
@@ -137,22 +172,152 @@ body::before {
   margin: 0;
   font-family: inherit;
   font-weight: 600;
-  font-size: clamp(1.05rem, 2.2vw, 1.35rem);
-  letter-spacing: 0.01em;
+  font-size: clamp(0.86rem, 1.9vw, 1rem);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-muted);
 }
 
-.press-level {
-  margin: 0.1rem 0 0;
+.tile-header {
+  width: min(31rem, 100%);
+  border-radius: 1.2rem;
+  padding: 0.8rem;
+  border: 1px solid var(--hud-border);
+  background: var(--hud-bg);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--soft-border), transparent 38%),
+    0 14px 34px -26px var(--shadow-color);
+  text-align: left;
+  display: grid;
+  row-gap: 0.6rem;
+}
+
+.tile-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.tile-header-kicker {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.tile-clock {
+  margin: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--signal), transparent 72%);
+  background: color-mix(in srgb, var(--signal), transparent 92%);
+  padding: 0.22rem 0.58rem;
+}
+
+.tile-clock.is-active {
+  border-color: color-mix(in srgb, var(--signal), transparent 34%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--signal), transparent 82%);
+}
+
+.tile-clock-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.62rem;
+  color: color-mix(in srgb, var(--signal), var(--text-main) 46%);
+}
+
+.tile-clock-value {
   font-size: 0.84rem;
   font-weight: 600;
-  letter-spacing: 0.01em;
-  color: color-mix(in srgb, var(--signal), var(--text-main) 48%);
+  color: color-mix(in srgb, var(--signal), var(--text-main) 32%);
+  min-width: 3ch;
+  text-align: right;
 }
 
-.press-stats {
+.tile-round {
   margin: 0;
-  font-size: 0.79rem;
-  letter-spacing: 0.01em;
+  display: grid;
+  row-gap: 0.18rem;
+}
+
+.tile-round-number {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.tile-round-title {
+  font-size: clamp(0.93rem, 2.6vw, 1.08rem);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--text-main);
+}
+
+.tile-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.tile-metric {
+  margin: 0;
+  display: grid;
+  row-gap: 0.12rem;
+  border: 1px solid var(--hud-chip-border);
+  border-radius: 0.7rem;
+  background: var(--hud-chip-bg);
+  padding: 0.36rem 0.45rem 0.4rem;
+}
+
+.tile-metric-label {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.58rem;
+  color: var(--text-muted);
+}
+
+.tile-metric-value {
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.tile-latest-winner {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.6rem;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.tile-latest-winner-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.62rem;
+}
+
+.tile-latest-winner-value {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: baseline;
+  color: color-mix(in srgb, var(--signal), var(--text-main) 46%);
+}
+
+.tile-latest-winner-value strong {
+  color: var(--text-main);
+}
+
+.tile-latest-winner-empty {
   color: var(--text-muted);
 }
 
@@ -161,7 +326,8 @@ body::before {
   display: inline-flex;
   align-items: flex-end;
   justify-content: center;
-  gap: 0.02em;
+  gap: 0.03em;
+  white-space: nowrap;
   font-size: clamp(2.2rem, 8vw, 3.8rem);
   font-weight: 600;
   line-height: 1;
@@ -177,32 +343,34 @@ body::before {
 
 .press-count-digit,
 .press-count-slot {
-  width: 0.63ch;
+  width: 1ch;
+  min-width: 1ch;
 }
 
 .press-count-separator {
-  width: 0.34ch;
+  width: 0.45ch;
   opacity: 0.8;
 }
 
 .press-count-slot {
   position: relative;
-  height: 1.02em;
-  overflow: hidden;
+  height: 1.18em;
+  overflow-y: hidden;
+  overflow-x: visible;
 }
 
 .press-count-reel {
   display: flex;
   flex-direction: column;
-  transform: translateY(calc(var(--digit-index) * -1.02em));
+  transform: translateY(0);
   transition: transform 540ms cubic-bezier(0.24, 0.8, 0.28, 1);
   will-change: transform;
 }
 
 .press-count-step {
   display: block;
-  height: 1.02em;
-  line-height: 1.02em;
+  height: 1.18em;
+  line-height: 1.18em;
 }
 
 .press-bubble-slot {
@@ -411,12 +579,140 @@ body::before {
   border-color: color-mix(in srgb, var(--signal), var(--soft-border) 50%);
 }
 
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: var(--modal-overlay);
+  z-index: 50;
+}
+
+.modal-panel {
+  width: min(27rem, 100%);
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--soft-border), transparent 10%);
+  background: color-mix(in srgb, var(--card-bg), transparent 8%);
+  box-shadow: 0 24px 60px -36px var(--shadow-color);
+  padding: 1rem;
+  display: grid;
+  row-gap: 0.85rem;
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.modal-description {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.modal-close {
+  appearance: none;
+  border: 1px solid color-mix(in srgb, var(--soft-border), transparent 10%);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-main);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+}
+
+.modal-close:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--signal), white 18%);
+  outline-offset: 3px;
+}
+
+.winner-form {
+  display: grid;
+  row-gap: 0.6rem;
+}
+
+.winner-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.winner-input {
+  width: 100%;
+  border: 1px solid color-mix(in srgb, var(--soft-border), transparent 10%);
+  border-radius: 0.7rem;
+  padding: 0.62rem 0.72rem;
+  background: color-mix(in srgb, var(--card-bg), transparent 6%);
+  color: var(--text-main);
+  font: inherit;
+}
+
+.winner-input:focus-visible,
+.winner-submit:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--signal), white 18%);
+  outline-offset: 3px;
+}
+
+.winner-submit {
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--button-text);
+  background:
+    linear-gradient(120deg, rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0) 45%),
+    linear-gradient(135deg, #ff5542 0%, var(--signal) 48%, #ba2519 100%);
+  padding: 0.63rem 1rem;
+  cursor: pointer;
+}
+
+.winner-submit:disabled,
+.winner-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.winner-error {
+  margin: 0;
+  color: var(--signal);
+  font-size: 0.8rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .press-mark-rotor {
-    animation: none;
+  .press-mark-rotor,
+  .press-mark-rotor.is-spinning {
+    animation-duration: 12s;
   }
 
   .press-count-reel {
+    transition-duration: 220ms;
+  }
+
+  .press-button,
+  .press-github,
+  .press-bubble,
+  .tile-clock {
     transition: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .tile-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tile-metric:last-child {
+    grid-column: span 2;
   }
 }

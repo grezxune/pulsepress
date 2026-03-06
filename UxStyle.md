@@ -1,7 +1,7 @@
 # UxStyle.md
 
 ## Brand
-- Name: PulseForge
+- Name: PulsePress
 - Feeling: cinematic minimalism, confident, tactile, high signal/low noise.
 
 ## Design Tokens

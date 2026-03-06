@@ -1,6 +1,6 @@
-# PulseForge
+# PulsePress
 
-PulseForge is a one-screen experiment: one button and one global realtime count.
+PulsePress is a one-screen experiment: one button and one global realtime count.
 
 ## Stack
 - Vite + React + TypeScript
@@ -15,7 +15,7 @@ bun run dev
 ```
 
 `convex dev` writes `.env.local` with `VITE_CONVEX_URL` for the frontend.
-Use [`.env.example`](/Users/tommy/Documents/code/grez-studios/pulseforge/.env.example) as the baseline for required env variables.
+Use `.env.example` as the baseline for required env variables.
 
 ## Scripts
 - `bun run dev` - start Vite dev server
@@ -28,6 +28,8 @@ Use [`.env.example`](/Users/tommy/Documents/code/grez-studios/pulseforge/.env.ex
 ## Architecture Notes
 - Counter uses a sharded Convex table (`counterShards`) to support high concurrent write throughput.
 - Frontend aggregates shard counts via `getTotal` and submits increments through `increment`.
+- Gameplay uses round-based progression: one click equals one level with a 10-second timer per round.
+- Global world-record tracking uses `levelRecords`; claim tokens from `winnerClaims` gate valid submissions into `levelWinners`.
 
 ## Deployment Notes
 - Frontend target: Vercel.

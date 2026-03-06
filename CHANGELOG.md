@@ -1,7 +1,7 @@
 # Changelog
 
 ## 2026-03-05
-- Initialized PulseForge project scaffold with Vite + React + TypeScript + bun.
+- Initialized PulsePress project scaffold with Vite + React + TypeScript + bun.
 - Added Convex integration and sharded global counter backend.
 - Implemented single-screen, no-scroll branded UX with one primary button.
 - Added matching logo and favicon assets.
@@ -13,11 +13,11 @@
 - Removed Turnstile/captcha integration from frontend and backend.
 - Kept server-side anti-abuse controls via per-client rate limiting in Convex.
 - Removed remaining bot-rate-limit schema and code paths (`botClients`) and reverted to direct global increment flow.
-- Replaced app logo and favicon with optimized PNG assets from the new PulseForge mark.
+- Replaced app logo and favicon with optimized PNG assets from the new PulsePress mark.
 - Added `apple-touch-icon.png` and removed legacy SVG icon files.
-- Converted the new PulseForge mark to true transparency and removed the visible white tile effect.
+- Converted the new PulsePress mark to true transparency and removed the visible white tile effect.
 - Added a premium emblem treatment behind the logo for contrast on both light and dark themes.
-- Updated the PulseForge title typography to match the primary page font.
+- Updated the PulsePress title typography to match the primary page font.
 - Reprocessed the provided logo file to remove baked checkerboard/white rectangle artifacts and regenerated all web icon assets.
 - Removed white highlights from the circular logo badge gradient for a darker premium finish.
 - Added comprehensive SEO/share metadata (canonical, robots, Open Graph, Twitter cards, and JSON-LD).
@@ -37,3 +37,15 @@
 - Rewrote all 600 taunt/response lines with coherent insult punchlines (removed random-word tag combos).
 - Added persistent Convex level record storage with `levelRecords` table and highest-level query/mutation.
 - Added UI stats line showing local click count and global highest level record.
+- Switched progression to one click per level and added a 10-second round timer that starts after the first click.
+- Added timeout reset behavior that returns players to round 1 with the timer unstarted.
+- Added world-record winner capture flow with a branded name-entry modal shown only after a record-setting timeout.
+- Added persistent winner history storage (`levelWinners`) with server-side claim gating (`winnerClaims`) and surfaced recent winners in the UI.
+- Fixed logo rotation reliability by moving the in-app spinner to a GSAP-controlled infinite rotor (with reduced-motion guard).
+- Fixed rolling number animation reliability by switching from CSS-variable-derived transforms to explicit per-digit transform updates with stable place-value keys.
+- Corrected in-app logo motion fallback by driving rotor spin with GSAP in all modes (normal speed by default, slower under reduced-motion preference).
+- Corrected rolling counter clipping by widening/tallening digit slots and switching to percent-based reel offsets so full numerals remain visible while animating.
+- Increased rolling counter digit slot width and changed reel slot masking to vertical-only overflow to prevent horizontal numeral clipping.
+- Fixed Convex winner-feed query validation by including `_creationTime` in `counter:getLevelWinners` return schema to prevent post-save client crashes.
+- Redesigned the tile-top telemetry into a cohesive game-style HUD header covering clock, round status, run clicks, run best, world record, and latest winner.
+- Removed the lower `Recent World Winners` tile and consolidated winner visibility to the HUD `Latest Winner` line.

@@ -1,7 +1,7 @@
-# AGENTS.md (PulseForge)
+# AGENTS.md (PulsePress)
 
 ## Product Direction
-- Product name: PulseForge
+- Product name: PulsePress
 - Core concept: one screen, one button, one global count.
 - Visual direction: premium brutalist signal aesthetic (paper + black + signal red), minimal copy, strong central interaction.
 

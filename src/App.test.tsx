@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useMutation, useQuery } from "convex/react";
 import App from "./App";
@@ -22,12 +22,21 @@ vi.mock("gsap", () => ({
 const mockedUseMutation = vi.mocked(useMutation);
 const mockedUseQuery = vi.mocked(useQuery);
 
+type WinnerEntry = {
+  _id: string;
+  name: string;
+  level: number;
+  createdAt: number;
+};
+
 function setupConvexMocks(params: {
   total: number;
   activeShards?: number;
   highestLevel?: number;
+  winners?: WinnerEntry[];
   increment?: ReturnType<typeof vi.fn>;
   report?: ReturnType<typeof vi.fn>;
+  addWinner?: ReturnType<typeof vi.fn>;
 }) {
   const counterSnapshot = {
     total: params.total,
@@ -38,26 +47,56 @@ function setupConvexMocks(params: {
     highestLevel: params.highestLevel ?? 1,
     updatedAt: null,
   };
+  const winnersSnapshot = params.winners ?? [];
+
   const incrementMutation =
     params.increment ?? vi.fn().mockResolvedValue({ ok: true, shard: 1 });
   const reportMutation =
-    params.report ?? vi.fn().mockResolvedValue({ highestLevel: 1, updated: false });
+    params.report ??
+    vi.fn().mockResolvedValue({
+      highestLevel: recordSnapshot.highestLevel,
+      updated: false,
+      claimId: null,
+    });
+  const addWinnerMutation =
+    params.addWinner ?? vi.fn().mockResolvedValue({ saved: true });
 
   let queryCallCount = 0;
   mockedUseQuery.mockImplementation(() => {
     queryCallCount += 1;
-    return (queryCallCount % 2 === 1 ? counterSnapshot : recordSnapshot) as never;
+    const querySlot = (queryCallCount - 1) % 3;
+
+    if (querySlot === 0) {
+      return counterSnapshot as never;
+    }
+
+    if (querySlot === 1) {
+      return recordSnapshot as never;
+    }
+
+    return winnersSnapshot as never;
   });
 
-  let mutationHookCallCount = 0;
+  let mutationCallCount = 0;
   mockedUseMutation.mockImplementation(() => {
-    mutationHookCallCount += 1;
-    return (mutationHookCallCount % 2 === 1 ? incrementMutation : reportMutation) as never;
+    mutationCallCount += 1;
+    const mutationSlot = (mutationCallCount - 1) % 3;
+
+    if (mutationSlot === 0) {
+      return incrementMutation as never;
+    }
+
+    if (mutationSlot === 1) {
+      return reportMutation as never;
+    }
+
+    return addWinnerMutation as never;
   });
 
   return {
     incrementMutation,
     reportMutation,
+    addWinnerMutation,
   };
 }
 
@@ -71,25 +110,41 @@ describe("App", () => {
     vi.useRealTimers();
   });
 
-  it("renders the global count", async () => {
+  it("renders count, round status, and winner summary", async () => {
     setupConvexMocks({
       total: 9876,
       activeShards: 18,
       highestLevel: 7,
+      winners: [
+        {
+          _id: "winner_1",
+          name: "Ada",
+          level: 7,
+          createdAt: 123,
+        },
+      ],
     });
 
     render(<App />);
 
+    const hud = screen.getByLabelText("Run HUD");
+
     expect(screen.getByLabelText("9,876")).toBeInTheDocument();
-    expect(
-      screen.getByText("Your Clicks: 0 · Record Level: 7"),
-    ).toBeInTheDocument();
+    expect(within(hud).getByText("Idle")).toBeInTheDocument();
+    expect(within(hud).getByText("Round 1")).toBeInTheDocument();
+    expect(within(hud).getByText("Won't get easier")).toBeInTheDocument();
+    expect(within(hud).getByText("Run Clicks")).toBeInTheDocument();
+    expect(within(hud).getByText("Run Best")).toBeInTheDocument();
+    expect(within(hud).getByText("World Record")).toBeInTheDocument();
+    expect(within(hud).getByText("Ada")).toBeInTheDocument();
+    expect(within(hud).getByText("Level 7")).toBeInTheDocument();
+
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "Press" })).toBeEnabled();
     });
   });
 
-  it("calls increment mutation on press", async () => {
+  it("increments and advances one level per click", async () => {
     const increment = vi.fn().mockResolvedValue({ ok: true, shard: 6 });
     setupConvexMocks({
       total: 2,
@@ -109,66 +164,75 @@ describe("App", () => {
     await waitFor(() => {
       expect(increment).toHaveBeenCalledWith({});
     });
+
+    expect(screen.getByText("Round 2")).toBeInTheDocument();
+    expect(screen.getByText("If this misses, stretch first")).toBeInTheDocument();
+    expect(screen.getByText("10.0s")).toBeInTheDocument();
   });
 
-  it("uses 6-second message windows with 2-second silent gaps", async () => {
+  it("resets to round 1 and stops the clock when the round timer expires", async () => {
     vi.useFakeTimers();
+    const report = vi.fn().mockResolvedValue({ highestLevel: 2, updated: false });
     setupConvexMocks({
       total: 42,
-      activeShards: 14,
       highestLevel: 9,
-      increment: vi.fn().mockResolvedValue({ ok: true, shard: 3 }),
+      report,
     });
 
-    const { container } = render(<App />);
-    const bubble = container.querySelector(".press-bubble");
-
-    expect(bubble?.textContent).toBe("");
-
-    act(() => {
-      vi.advanceTimersByTime(2_100);
-    });
-    const firstTaunt = bubble?.textContent;
-
-    expect(firstTaunt).toBeTruthy();
-
-    act(() => {
-      vi.advanceTimersByTime(5_800);
-    });
-    expect(bubble?.textContent).toBe(firstTaunt);
-
-    act(() => {
-      vi.advanceTimersByTime(250);
-    });
-    expect(bubble?.textContent).toBe("");
-
-    act(() => {
-      vi.advanceTimersByTime(2_100);
-    });
-    const secondTaunt = bubble?.textContent;
-
-    expect(secondTaunt).toBeTruthy();
-    expect(secondTaunt).not.toBe(firstTaunt);
+    render(<App />);
 
     fireEvent.click(screen.getByRole("button", { name: "Press" }));
-    const clickResponse = bubble?.textContent;
+    expect(screen.getByText("Round 2")).toBeInTheDocument();
+    expect(screen.getByText("If this misses, stretch first")).toBeInTheDocument();
 
-    expect(clickResponse).toBeTruthy();
-    expect(clickResponse).not.toBe(secondTaunt);
-
-    act(() => {
-      vi.advanceTimersByTime(5_800);
+    await act(async () => {
+      vi.advanceTimersByTime(10_200);
+      await Promise.resolve();
     });
-    expect(bubble?.textContent).toBe(clickResponse);
 
-    act(() => {
-      vi.advanceTimersByTime(250);
-    });
-    expect(bubble?.textContent).toBe("");
+    expect(screen.getByText("Idle")).toBeInTheDocument();
+    expect(screen.getByText("Round 1")).toBeInTheDocument();
+    expect(screen.getByText("Won't get easier")).toBeInTheDocument();
+    expect(report).toHaveBeenCalledWith({ level: 2 });
+  });
 
-    act(() => {
-      vi.advanceTimersByTime(2_100);
+  it("opens winner modal after world-record timeout and saves winner name", async () => {
+    vi.useFakeTimers();
+    const report = vi.fn().mockResolvedValue({
+      highestLevel: 12,
+      updated: true,
+      claimId: "claim_12",
     });
-    expect(bubble?.textContent).not.toBe(clickResponse);
+    const addWinner = vi.fn().mockResolvedValue({ saved: true });
+    setupConvexMocks({
+      total: 100,
+      highestLevel: 5,
+      report,
+      addWinner,
+    });
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Press" }));
+
+    await act(async () => {
+      vi.advanceTimersByTime(10_200);
+      await Promise.resolve();
+    });
+
+    expect(screen.getByRole("dialog", { name: "World Record Beaten" })).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Winner name"), {
+      target: { value: "Tommy" },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Save winner" }));
+      await Promise.resolve();
+    });
+
+    expect(addWinner).toHaveBeenCalledWith({
+      claimId: "claim_12",
+      name: "Tommy",
+    });
   });
 });
