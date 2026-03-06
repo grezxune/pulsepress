@@ -13,3 +13,5 @@
 - Removed Turnstile/captcha integration from frontend and backend.
 - Kept server-side anti-abuse controls via per-client rate limiting in Convex.
 - Removed remaining bot-rate-limit schema and code paths (`botClients`) and reverted to direct global increment flow.
+- Replaced app logo and favicon with optimized PNG assets from the new PulseForge mark.
+- Added `apple-touch-icon.png` and removed legacy SVG icon files.

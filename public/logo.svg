@@ -1,7 +1,0 @@
-<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="pulseforgeLogoTitle">
-  <title id="pulseforgeLogoTitle">PulseForge logo</title>
-  <rect x="8" y="8" width="240" height="240" rx="56" fill="#111111" />
-  <circle cx="128" cy="128" r="70" fill="#F5F3EE" stroke="#E63B2E" stroke-width="18" />
-  <circle cx="128" cy="128" r="24" fill="#E63B2E" />
-  <path d="M38 180H86L102 156L118 194L138 136L156 176H218" stroke="#F5F3EE" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />
-</svg>

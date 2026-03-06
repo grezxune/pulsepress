@@ -106,7 +106,7 @@ function App() {
   return (
     <main ref={stageRef} className="press-root">
       <section className="press-shell" aria-live="polite">
-        <img src="/logo.svg" alt="PulseForge logo" className="press-mark" />
+        <img src="/logo.png" alt="PulseForge logo" className="press-mark" />
         <p className="press-label">PulseForge</p>
         <p className="press-count">{counter ? formatCount(displayCount) : "..."}</p>
 
