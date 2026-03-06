@@ -1,17 +1,11 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useAction, useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import App from "./App";
 
 vi.mock("convex/react", () => ({
-  useAction: vi.fn(),
+  useMutation: vi.fn(),
   useQuery: vi.fn(),
-}));
-
-vi.mock("@marsidev/react-turnstile", () => ({
-  Turnstile: ({ onSuccess }: { onSuccess: (token: string) => void }) => (
-    <button type="button" onClick={() => onSuccess("captcha-token")}>Human Check</button>
-  ),
 }));
 
 vi.mock("gsap", () => ({
@@ -25,44 +19,43 @@ vi.mock("gsap", () => ({
   },
 }));
 
-const mockedUseAction = vi.mocked(useAction);
+const mockedUseMutation = vi.mocked(useMutation);
 const mockedUseQuery = vi.mocked(useQuery);
 
 describe("App", () => {
   beforeEach(() => {
-    vi.stubEnv("VITE_TURNSTILE_SITE_KEY", "test-site-key");
     window.localStorage.clear();
     mockedUseQuery.mockReset();
-    mockedUseAction.mockReset();
+    mockedUseMutation.mockReset();
   });
 
-  it("renders the global count and requires human verification", () => {
+  it("renders the global count", async () => {
     mockedUseQuery.mockReturnValue({ total: 9876, shardCount: 128, activeShards: 18 } as never);
-    mockedUseAction.mockReturnValue(vi.fn().mockResolvedValue({ ok: true, shard: 1 }) as never);
+    mockedUseMutation.mockReturnValue(vi.fn().mockResolvedValue({ ok: true, shard: 1 }) as never);
 
     render(<App />);
 
     expect(screen.getByText("9,876")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Press" })).toBeDisabled();
-
-    fireEvent.click(screen.getByRole("button", { name: "Human Check" }));
-
-    expect(screen.getByRole("button", { name: "Press" })).toBeEnabled();
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Press" })).toBeEnabled();
+    });
   });
 
-  it("calls protected press action after captcha verification", async () => {
-    const protectedPress = vi.fn().mockResolvedValue({ ok: true, shard: 6 });
+  it("calls increment mutation on press", async () => {
+    const increment = vi.fn().mockResolvedValue({ ok: true, shard: 6 });
     mockedUseQuery.mockReturnValue({ total: 2, shardCount: 128, activeShards: 2 } as never);
-    mockedUseAction.mockReturnValue(protectedPress as never);
+    mockedUseMutation.mockReturnValue(increment as never);
 
     render(<App />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Human Check" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Press" })).toBeEnabled();
+    });
+
     fireEvent.click(screen.getByRole("button", { name: "Press" }));
 
     await waitFor(() => {
-      expect(protectedPress).toHaveBeenCalledWith({
-        captchaToken: "captcha-token",
+      expect(increment).toHaveBeenCalledWith({
         clientId: expect.any(String),
       });
     });

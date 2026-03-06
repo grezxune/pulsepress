@@ -1,7 +1,6 @@
-import { Turnstile } from "@marsidev/react-turnstile";
 import { gsap } from "gsap";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useAction, useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { getOrCreateClientId } from "./lib/client-id";
 import { formatCount } from "./lib/count-format";
@@ -14,13 +13,9 @@ function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [optimisticDelta, setOptimisticDelta] = useState(0);
   const [clientId, setClientId] = useState<string | null>(null);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
-
-  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim();
 
   const counter = useQuery(api.counter.getTotal);
-  const pressWithProtection = useAction(api.securePress.pressWithProtection);
+  const increment = useMutation(api.counter.increment);
 
   const displayCount = useMemo(
     () => (counter?.total ?? 0) + optimisticDelta,
@@ -94,18 +89,8 @@ function App() {
     };
   }, []);
 
-  const resetCaptcha = () => {
-    setCaptchaToken(null);
-    setTurnstileResetKey((key) => key + 1);
-  };
-
   const handlePress = async () => {
-    if (isSubmitting) {
-      return;
-    }
-
-    if (!turnstileSiteKey || !clientId || !captchaToken) {
-      setErrorMessage("Complete bot verification before pressing.");
+    if (isSubmitting || !clientId) {
       return;
     }
 
@@ -114,15 +99,12 @@ function App() {
     setOptimisticDelta((count) => count + 1);
 
     try {
-      await pressWithProtection({
-        captchaToken,
+      await increment({
         clientId,
       });
       setOptimisticDelta(0);
-      resetCaptcha();
     } catch (error) {
       setOptimisticDelta(0);
-      resetCaptcha();
       setErrorMessage(
         error instanceof Error
           ? error.message
@@ -140,36 +122,17 @@ function App() {
         <p className="press-label">PulseForge</p>
         <p className="press-count">{counter ? formatCount(displayCount) : "..."}</p>
 
-        {turnstileSiteKey ? (
-          <div className="press-turnstile" aria-label="Human verification">
-            <Turnstile
-              key={turnstileResetKey}
-              siteKey={turnstileSiteKey}
-              options={{ action: "press", theme: "auto" }}
-              onSuccess={(token) => setCaptchaToken(token)}
-              onExpire={resetCaptcha}
-              onError={resetCaptcha}
-            />
-          </div>
-        ) : (
-          <p className="press-error">Missing VITE_TURNSTILE_SITE_KEY.</p>
-        )}
-
         <button
           ref={buttonRef}
           className="press-button"
           type="button"
           onClick={handlePress}
-          disabled={isSubmitting || !counter || !turnstileSiteKey || !captchaToken}
+          disabled={isSubmitting || !counter || !clientId}
         >
           {isSubmitting ? "Registering..." : "Press"}
         </button>
 
-        <p className="press-meta">
-          {captchaToken
-            ? "Human verification passed."
-            : "Complete verification to enable Press."}
-        </p>
+        <p className="press-meta">Server-side rate limits are active.</p>
         {errorMessage ? <p className="press-error">{errorMessage}</p> : null}
       </section>
     </main>

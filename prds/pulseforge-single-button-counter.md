@@ -7,6 +7,7 @@ log:
   - 2026-03-05: Chosen stack switched from Next.js to Vite + React for minimal overhead.
   - 2026-03-05: Implemented sharded Convex counter model and one-screen branded UI.
   - 2026-03-05: Added bot protection with Turnstile verification, token replay prevention, and server-side rate limiting.
+  - 2026-03-06: Removed Turnstile/captcha integration; kept server-side rate limiting only.
 ---
 
 ## Problem
@@ -38,16 +39,15 @@ This experiment validates high-scale write behavior, UX polish under constrained
 
 ## Data & Integrations
 - Convex table `counterShards` with write sharding for increment throughput.
-- Convex table `usedCaptchaTokens` to enforce one-time captcha token usage.
 - Convex table `botClients` for per-client rate-limit state and temporary blocks.
 - Convex query `getTotal` aggregates shard counts.
-- Convex action `pressWithProtection` verifies Turnstile server-side and calls internal increment logic.
+- Convex mutation `increment` enforces rate limits and updates sharded counts.
 
 ## Security Architecture & Threat Model
-- Trust boundary: public client to Convex public action with server-only secret verification.
+- Trust boundary: public client to Convex public mutation.
 - Abuse case: scripted rapid-fire presses.
-  Mitigations: Turnstile challenge verification, one-time token consumption, and per-client rate limiting with temporary blocks.
-- Input validation: action validates token/client fields and mutation clamps `shardHint` to valid numeric range.
+  Mitigations: per-client rate limiting with temporary blocks.
+- Input validation: mutation validates `clientId` format and clamps `shardHint` to valid numeric range.
 - Secrets: deployment URLs and keys remain in environment variables.
 
 ## Performance Strategy & Budgets
@@ -68,9 +68,8 @@ This experiment validates high-scale write behavior, UX polish under constrained
 
 ## Rollout Plan
 1. Local development with anonymous Convex deployment.
-2. Create cloud Convex project (or reuse existing) when quota allows.
+2. Create dedicated cloud Convex project.
 3. Deploy frontend to Vercel with Convex URL environment variable.
 
 ## Next Steps
-- Complete cloud Convex provisioning when project quota is available.
-- Set `TURNSTILE_SECRET_KEY` and `TURNSTILE_EXPECTED_HOSTNAME` on cloud deployment before broad release.
+- Tune rate-limit thresholds after observing real traffic patterns.

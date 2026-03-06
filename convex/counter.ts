@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { internalMutation, query } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 
 const SHARD_COUNT = 128;
 const WINDOW_MS = 60_000;
@@ -27,37 +27,12 @@ export const getTotal = query({
   },
 });
 
-/** Consumes a verified captcha token once to prevent replay attacks. */
-export const consumeCaptchaToken = internalMutation({
-  args: {
-    tokenHash: v.string(),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const existingToken = await ctx.db
-      .query("usedCaptchaTokens")
-      .withIndex("by_tokenHash", (q) => q.eq("tokenHash", args.tokenHash))
-      .unique();
-
-    if (existingToken) {
-      throw new Error("Captcha token has already been used.");
-    }
-
-    await ctx.db.insert("usedCaptchaTokens", {
-      tokenHash: args.tokenHash,
-      verifiedAt: Date.now(),
-    });
-
-    return null;
-  },
-});
-
 /**
- * Increments the global counter after enforcing per-client server-side limits.
+ * Increments the global counter with server-side anti-abuse limits.
  */
-export const internalIncrement = internalMutation({
+export const increment = mutation({
   args: {
-    clientIdHash: v.string(),
+    clientId: v.string(),
     shardHint: v.optional(v.number()),
   },
   returns: v.object({
@@ -65,16 +40,22 @@ export const internalIncrement = internalMutation({
     shard: v.number(),
   }),
   handler: async (ctx, args) => {
+    const clientId = args.clientId.trim();
+
+    if (clientId.length < 16 || clientId.length > 128) {
+      throw new Error("Client identity is invalid.");
+    }
+
     const now = Date.now();
 
     const clientState = await ctx.db
       .query("botClients")
-      .withIndex("by_clientIdHash", (q) => q.eq("clientIdHash", args.clientIdHash))
+      .withIndex("by_clientId", (q) => q.eq("clientId", clientId))
       .unique();
 
     if (!clientState) {
       await ctx.db.insert("botClients", {
-        clientIdHash: args.clientIdHash,
+        clientId,
         windowStartedAt: now,
         pressesInWindow: 1,
         lastPressAt: now,
@@ -93,9 +74,7 @@ export const internalIncrement = internalMutation({
       }
 
       const shouldResetWindow = now - clientState.windowStartedAt >= WINDOW_MS;
-      const nextPressCount = shouldResetWindow
-        ? 1
-        : clientState.pressesInWindow + 1;
+      const nextPressCount = shouldResetWindow ? 1 : clientState.pressesInWindow + 1;
 
       if (nextPressCount > MAX_PRESSES_PER_WINDOW) {
         await ctx.db.patch(clientState._id, {

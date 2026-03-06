@@ -8,14 +8,10 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_shard", ["shard"]),
   botClients: defineTable({
-    clientIdHash: v.string(),
+    clientId: v.string(),
     windowStartedAt: v.number(),
     pressesInWindow: v.number(),
     lastPressAt: v.number(),
     blockedUntil: v.optional(v.number()),
-  }).index("by_clientIdHash", ["clientIdHash"]),
-  usedCaptchaTokens: defineTable({
-    tokenHash: v.string(),
-    verifiedAt: v.number(),
-  }).index("by_tokenHash", ["tokenHash"]),
+  }).index("by_clientId", ["clientId"]),
 });

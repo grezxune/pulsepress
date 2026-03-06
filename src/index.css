@@ -98,10 +98,6 @@ body::before {
   line-height: 1;
 }
 
-.press-turnstile {
-  margin-top: 0.35rem;
-}
-
 .press-button {
   appearance: none;
   border: none;
