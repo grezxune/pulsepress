@@ -2,6 +2,8 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
 const SHARD_COUNT = 128;
+const LEVEL_RECORD_SCOPE = "global";
+const MIN_LEVEL = 1;
 
 /** Returns the globally aggregated press count. */
 export const getTotal = query({
@@ -19,6 +21,75 @@ export const getTotal = query({
       total,
       shardCount: SHARD_COUNT,
       activeShards: shards.length,
+    };
+  },
+});
+
+/** Returns the highest level record reached by any client. */
+export const getHighestLevel = query({
+  args: {},
+  returns: v.object({
+    highestLevel: v.number(),
+    updatedAt: v.union(v.number(), v.null()),
+  }),
+  handler: async (ctx) => {
+    const record = await ctx.db
+      .query("levelRecords")
+      .withIndex("by_scope", (q) => q.eq("scope", LEVEL_RECORD_SCOPE))
+      .unique();
+
+    return {
+      highestLevel: record?.highestLevel ?? MIN_LEVEL,
+      updatedAt: record?.updatedAt ?? null,
+    };
+  },
+});
+
+/** Updates the global highest level record if a higher level is reached. */
+export const reportHighestLevel = mutation({
+  args: {
+    level: v.number(),
+  },
+  returns: v.object({
+    highestLevel: v.number(),
+    updated: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const normalizedLevel = Math.max(MIN_LEVEL, Math.floor(args.level));
+    const existingRecord = await ctx.db
+      .query("levelRecords")
+      .withIndex("by_scope", (q) => q.eq("scope", LEVEL_RECORD_SCOPE))
+      .unique();
+
+    if (!existingRecord) {
+      await ctx.db.insert("levelRecords", {
+        scope: LEVEL_RECORD_SCOPE,
+        highestLevel: normalizedLevel,
+        updatedAt: now,
+      });
+
+      return {
+        highestLevel: normalizedLevel,
+        updated: true,
+      };
+    }
+
+    if (normalizedLevel > existingRecord.highestLevel) {
+      await ctx.db.patch(existingRecord._id, {
+        highestLevel: normalizedLevel,
+        updatedAt: now,
+      });
+
+      return {
+        highestLevel: normalizedLevel,
+        updated: true,
+      };
+    }
+
+    return {
+      highestLevel: existingRecord.highestLevel,
+      updated: false,
     };
   },
 });

@@ -35,3 +35,5 @@
 - Added continuous logo rotation (360 degrees every 3 seconds, infinite loop).
 - Reworked the global count display into an old-school rolling digit reel animation.
 - Rewrote all 600 taunt/response lines with coherent insult punchlines (removed random-word tag combos).
+- Added persistent Convex level record storage with `levelRecords` table and highest-level query/mutation.
+- Added UI stats line showing local click count and global highest level record.

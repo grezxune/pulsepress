@@ -11,6 +11,7 @@ log:
   - 2026-03-06: Added comprehensive SEO/distribution metadata (Open Graph, Twitter cards, canonical tags, JSON-LD, sitemap, robots, and web manifest).
   - 2026-03-06: Added button speech-bubble behavior with large taunt/response phrase pools and idle-aware timing.
   - 2026-03-06: Added local level progression with escalating click-difficulty mechanics and level taunt titles.
+  - 2026-03-06: Added persistent highest-level record tracking in Convex and surfaced record stats in UI.
 ---
 
 ## Problem
@@ -43,6 +44,7 @@ This experiment validates high-scale write behavior, UX polish under constrained
 - Add local per-client level progression that increases UI click difficulty as local presses increase.
   - Include level labels in the format `Level N - {taunt title}`.
   - Difficulty mechanics may include sliding, teleporting, camouflage contrast reduction, and tighter click windows.
+- Store and display the highest level record achieved using a dedicated Convex table.
 
 ## Non-functional Requirements
 - Mobile and desktop responsive.

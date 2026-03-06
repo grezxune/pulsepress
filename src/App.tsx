@@ -159,12 +159,15 @@ function App() {
   const [isWindowOpen, setIsWindowOpen] = useState(true);
 
   const counter = useQuery(api.counter.getTotal);
+  const highestLevelRecord = useQuery(api.counter.getHighestLevel);
   const increment = useMutation(api.counter.increment);
+  const reportHighestLevel = useMutation(api.counter.reportHighestLevel);
   const levelNumber = Math.min(
     LEVEL_PROFILES.length,
     Math.floor(localPresses / CLICKS_PER_LEVEL) + 1,
   );
   const levelProfile = LEVEL_PROFILES[levelNumber - 1] ?? LEVEL_PROFILES[0];
+  const highestRecordedLevel = highestLevelRecord?.highestLevel ?? 1;
 
   const displayCount = useMemo(
     () => (counter?.total ?? 0) + pendingPresses,
@@ -302,6 +305,10 @@ function App() {
   }, [clearVoiceTimers, startTauntLoop]);
 
   useEffect(() => {
+    void reportHighestLevel({ level: levelNumber }).catch(() => undefined);
+  }, [levelNumber, reportHighestLevel]);
+
+  useEffect(() => {
     clearDifficultyTimers();
 
     if (levelProfile.teleport) {
@@ -383,6 +390,9 @@ function App() {
         <p className="press-label">PulseForge</p>
         <p className="press-level">
           {`Level ${levelNumber} - ${levelProfile.title}`}
+        </p>
+        <p className="press-stats">
+          {`Your Clicks: ${localPresses.toLocaleString("en-US")} · Record Level: ${highestRecordedLevel}`}
         </p>
         {counter ? <RollingCounter value={displayCount} /> : <p className="press-count">...</p>}
         <div className="press-bubble-slot" aria-hidden="true">

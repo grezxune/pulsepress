@@ -7,4 +7,9 @@ export default defineSchema({
     count: v.number(),
     updatedAt: v.number(),
   }).index("by_shard", ["shard"]),
+  levelRecords: defineTable({
+    scope: v.string(),
+    highestLevel: v.number(),
+    updatedAt: v.number(),
+  }).index("by_scope", ["scope"]),
 });
